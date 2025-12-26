@@ -1,0 +1,219 @@
+name: 本格市場分析記事の自動投稿
+
+on:
+  schedule:
+    - cron: '0 0 * * 1-5'
+    - cron: '30 6 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  generate-professional-article:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - name: リポジトリをチェックアウト
+      uses: actions/checkout@v3
+      
+    - name: Pythonをセットアップ
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        
+    - name: 依存関係をインストール
+      run: pip install yfinance pandas numpy
+        
+    - name: 本格的な市場分析記事を生成
+      run: |
+        python << 'PYTHON_SCRIPT'
+        import yfinance as yf
+        from datetime import datetime
+        import os
+
+        def calculate_technical_indicators(data):
+            close = data['Close']
+            ma5 = close.rolling(window=5).mean().iloc[-1] if len(close) >= 5 else close.iloc[-1]
+            ma25 = close.rolling(window=25).mean().iloc[-1] if len(close) >= 25 else close.iloc[-1]
+            delta = close.diff()
+            gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+            loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+            rs = gain / loss
+            rsi = 100 - (100 / (1 + rs))
+            rsi_value = rsi.iloc[-1] if len(rsi) > 0 else 50
+            return {'ma5': ma5, 'ma25': ma25, 'rsi': rsi_value}
+
+        def get_market_sentiment(change_pct):
+            if change_pct > 1.0:
+                return "強気", "bullish"
+            elif change_pct > 0.3:
+                return "やや強気", "bullish"
+            elif change_pct < -1.0:
+                return "弱気", "bearish"
+            elif change_pct < -0.3:
+                return "やや弱気", "bearish"
+            else:
+                return "中立", "neutral"
+
+        def analyze_market_data():
+            nikkei = yf.Ticker("^N225").history(period='1mo')
+            usdjpy = yf.Ticker("JPY=X").history(period='1mo')
+            nasdaq = yf.Ticker("^IXIC").history(period='1mo')
+            sp500 = yf.Ticker("^GSPC").history(period='1mo')
+            dow = yf.Ticker("^DJI").history(period='1mo')
+            
+            nikkei_latest = nikkei.iloc[-1]
+            nikkei_prev = nikkei.iloc[-2] if len(nikkei) > 1 else nikkei.iloc[-1]
+            usdjpy_latest = usdjpy.iloc[-1]
+            usdjpy_prev = usdjpy.iloc[-2] if len(usdjpy) > 1 else usdjpy.iloc[-1]
+            nasdaq_latest = nasdaq.iloc[-1]
+            nasdaq_prev = nasdaq.iloc[-2] if len(nasdaq) > 1 else nasdaq.iloc[-1]
+            sp500_latest = sp500.iloc[-1]
+            sp500_prev = sp500.iloc[-2] if len(sp500) > 1 else sp500.iloc[-1]
+            dow_latest = dow.iloc[-1]
+            dow_prev = dow.iloc[-2] if len(dow) > 1 else dow.iloc[-1]
+            
+            nikkei_change = ((nikkei_latest['Close'] - nikkei_prev['Close']) / nikkei_prev['Close']) * 100
+            usdjpy_change = ((usdjpy_latest['Close'] - usdjpy_prev['Close']) / usdjpy_prev['Close']) * 100
+            nasdaq_change = ((nasdaq_latest['Close'] - nasdaq_prev['Close']) / nasdaq_prev['Close']) * 100
+            sp500_change = ((sp500_latest['Close'] - sp500_prev['Close']) / sp500_prev['Close']) * 100
+            dow_change = ((dow_latest['Close'] - dow_prev['Close']) / dow_prev['Close']) * 100
+            
+            nikkei_tech = calculate_technical_indicators(nikkei)
+            
+            return {
+                'nikkei': {'price': nikkei_latest['Close'], 'change': nikkei_latest['Close'] - nikkei_prev['Close'],
+                          'change_pct': nikkei_change, 'high': nikkei_latest['High'], 'low': nikkei_latest['Low'],
+                          'volume': nikkei_latest['Volume'], 'tech': nikkei_tech},
+                'usdjpy': {'price': usdjpy_latest['Close'], 'change': usdjpy_latest['Close'] - usdjpy_prev['Close'],
+                          'change_pct': usdjpy_change, 'high': usdjpy_latest['High'], 'low': usdjpy_latest['Low']},
+                'nasdaq': {'price': nasdaq_latest['Close'], 'change': nasdaq_latest['Close'] - nasdaq_prev['Close'],
+                          'change_pct': nasdaq_change},
+                'sp500': {'price': sp500_latest['Close'], 'change': sp500_latest['Close'] - sp500_prev['Close'],
+                         'change_pct': sp500_change},
+                'dow': {'price': dow_latest['Close'], 'change': dow_latest['Close'] - dow_prev['Close'],
+                       'change_pct': dow_change}
+            }
+
+        def generate_professional_article(data):
+            now = datetime.now()
+            date_str = now.strftime('%Y-%m-%d')
+            time_str = now.strftime('%H:%M')
+            nikkei_sentiment, nikkei_badge = get_market_sentiment(data['nikkei']['change_pct'])
+            market_sentiment, market_badge = get_market_sentiment((data['nikkei']['change_pct'] + data['sp500']['change_pct']) / 2)
+            tech = data['nikkei']['tech']
+            
+            if tech['rsi'] > 70:
+                tech_comment = "RSI指標は買われ過ぎ圏にあり、調整の可能性に注意が必要です。"
+            elif tech['rsi'] < 30:
+                tech_comment = "RSI指標は売られ過ぎ圏にあり、反発の可能性があります。"
+            else:
+                tech_comment = "RSI指標は中立圏で推移しており、方向感を探る展開が続いています。"
+            
+            article = f"""---
+layout: post
+title: "【本格市場分析】{date_str} {time_str} - プロが解説する今日の相場"
+date: {now.strftime('%Y-%m-%d %H:%M:%S')} +0900
+categories: 市場分析 投資戦略
+tags: 日経平均 米国株 為替 テクニカル分析
+excerpt: "{market_sentiment}相場。日経平均は{data['nikkei']['price']:,.2f}円で、{abs(data['nikkei']['change_pct']):.2f}%の{'上昇' if data['nikkei']['change_pct'] > 0 else '下落'}。今後の投資戦略と注目ポイントを詳しく解説します。"
+---
+
+<span class="badge badge-{market_badge}">{market_sentiment}</span>
+
+# 市場概況
+
+**更新時刻**: {time_str}  
+**総合判断**: <span class="badge badge-{nikkei_badge}">{nikkei_sentiment}</span>
+
+本日の市場は**{market_sentiment}**な展開となっています。投資家心理は{"改善" if data['nikkei']['change_pct'] > 0 else "慎重"}傾向にあり、{"リスク選好" if data['nikkei']['change_pct'] > 0 else "リスク回避"}の動きが見られます。
+
+---
+
+## 📊 主要指標の動向
+
+### 🇯🇵 日本市場
+
+#### 日経平均株価
+- **現在値**: {data['nikkei']['price']:,.2f}円
+- **前日比**: {data['nikkei']['change']:+,.2f}円 ({data['nikkei']['change_pct']:+.2f}%)
+- **日中高値**: {data['nikkei']['high']:,.2f}円
+- **日中安値**: {data['nikkei']['low']:,.2f}円
+
+**分析**: 日経平均は{abs(data['nikkei']['change_pct']):.2f}%{'上昇' if data['nikkei']['change_pct'] > 0 else '下落'}。{"堅調な" if data['nikkei']['change_pct'] > 0 else "軟調な"}推移です。
+
+### 💱 為替市場
+
+#### ドル/円
+- **現在値**: {data['usdjpy']['price']:.2f}円
+- **前日比**: {data['usdjpy']['change']:+.2f}円 ({data['usdjpy']['change_pct']:+.2f}%)
+
+**分析**: ドル円は{"円安" if data['usdjpy']['change_pct'] > 0 else "円高"}方向に動いています。
+
+### 🇺🇸 米国市場
+
+| 指数 | 現在値 | 前日比 | 変化率 |
+|------|--------|--------|--------|
+| ダウ工業株30種 | {data['dow']['price']:,.2f} | {data['dow']['change']:+,.2f} | {data['dow']['change_pct']:+.2f}% |
+| S&P500 | {data['sp500']['price']:,.2f} | {data['sp500']['change']:+,.2f} | {data['sp500']['change_pct']:+.2f}% |
+| NASDAQ総合 | {data['nasdaq']['price']:,.2f} | {data['nasdaq']['change']:+,.2f} | {data['nasdaq']['change_pct']:+.2f}% |
+
+---
+
+## 📈 テクニカル分析
+
+### 日経平均のテクニカル指標
+
+- **5日移動平均**: {tech['ma5']:,.2f}円
+- **25日移動平均**: {tech['ma25']:,.2f}円
+- **RSI(14日)**: {tech['rsi']:.1f}
+
+**テクニカル見解**: {tech_comment}
+
+---
+
+## 💡 投資戦略
+
+### 短期投資戦略
+{"1. 押し目買いの好機\\n2. 利益確定のタイミング\\n3. ストップロス設定" if data['nikkei']['change_pct'] > 0 else "1. 様子見が賢明\\n2. 急反発に注意\\n3. キャッシュ確保"}
+
+### 中長期投資戦略
+1. 分散投資の徹底
+2. ファンダメンタルズ重視
+3. 定期的なリバランス
+
+---
+
+## ⚠️ 免責事項
+
+本レポートは情報提供を目的としており、投資助言ではありません。投資判断はご自身の責任で行ってください。
+
+---
+
+*この記事はAIによって自動生成されています。*
+"""
+            return article
+
+        try:
+            print("市場データを取得中...")
+            data = analyze_market_data()
+            print("記事を生成中...")
+            article = generate_professional_article(data)
+            os.makedirs('_posts', exist_ok=True)
+            filename = f"_posts/{datetime.now().strftime('%Y-%m-%d')}-professional-analysis.md"
+            with open(filename, 'w', encoding='utf-8') as f:
+                f.write(article)
+            print(f"✅ 完了: {filename}")
+        except Exception as e:
+            print(f"❌ エラー: {str(e)}")
+            raise
+
+        PYTHON_SCRIPT
+        
+    - name: 変更をコミット・プッシュ
+      run: |
+        git config user.email "action@github.com"
+        git config user.name "Market Analyst AI"
+        git add _posts/*.md
+        git diff --quiet && git diff --staged --quiet || git commit -m "📊 本格市場分析記事を投稿"
+        git push
