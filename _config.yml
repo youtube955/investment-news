@@ -1,0 +1,22 @@
+title: Auto Invest News
+description: AIが自動生成する投資ニュース
+theme: minima
+markdown: kramdown
+
+# プラグイン
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+
+# サイト設定
+lang: ja
+timezone: Asia/Tokyo
+
+# ナビゲーション
+header_pages:
+  - about.md
+  - archive.md
+
+# SNS
+twitter_username: your_twitter
+github_username: your_github
