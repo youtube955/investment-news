@@ -1,22 +1,32 @@
-title: Auto Invest News
-description: AIが自動生成する投資ニュース
-theme: minima
-markdown: kramdown
+title: "投資市況ニュース - プロフェッショナル市場分析"
+description: "AIによる本格的な市場分析と投資戦略。日経平均、米国株、為替の詳細解説"
+lang: ja
+timezone: Asia/Tokyo
 
-# プラグイン
+baseurl: ""
+url: "https://youtube955.github.io"
+
+# Theme settings
+theme: minima
 plugins:
   - jekyll-feed
   - jekyll-seo-tag
 
-# サイト設定
-lang: ja
-timezone: Asia/Tokyo
+# Collections
+collections:
+  posts:
+    output: true
+    permalink: /:year/:month/:day/:title/
 
-# ナビゲーション
-header_pages:
-  - about.md
-  - archive.md
+# Defaults
+defaults:
+  - scope:
+      path: ""
+      type: "posts"
+    values:
+      layout: "post"
+      author: "Market Analyst AI"
 
-# SNS
-twitter_username: your_twitter
-github_username: your_github
+# Custom settings
+show_excerpts: true
+excerpt_length: 150
