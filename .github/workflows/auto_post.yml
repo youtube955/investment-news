@@ -1,0 +1,91 @@
+name: Auto Post Market News
+
+on:
+  schedule:
+    - cron: '0 0 * * 1-5'    # 平日 朝9:00 JST (UTC 0:00)
+    - cron: '30 6 * * 1-5'   # 平日 午後3:30 JST (UTC 6:30)
+  workflow_dispatch:          # 手動実行も可能
+
+jobs:
+  generate-post:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - name: リポジトリをチェックアウト
+      uses: actions/checkout@v3
+      
+    - name: Pythonをセットアップ
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        
+    - name: 依存関係をインストール
+      run: |
+        pip install yfinance pandas
+        
+    - name: 記事を生成
+      run: |
+        python << 'EOF'
+        import yfinance as yf
+        from datetime import datetime
+        import os
+        
+        # 市場データ取得
+        nikkei = yf.Ticker("^N225").history(period='1d')
+        usdjpy = yf.Ticker("JPY=X").history(period='1d')
+        nasdaq = yf.Ticker("^IXIC").history(period='1d')
+        sp500 = yf.Ticker("^GSPC").history(period='1d')
+        
+        now = datetime.now()
+        date_str = now.strftime('%Y-%m-%d')
+        time_str = now.strftime('%H:%M')
+        
+        # 記事生成
+        article = f"""---
+        layout: post
+        title: "【市況レポート】{date_str} {time_str} - 市場動向"
+        date: {now.strftime('%Y-%m-%d %H:%M:%S')} +0900
+        categories: 市況 レポート
+        tags: 日経平均 為替 米国株
+        ---
+        
+        # 市場動向レポート
+        
+        更新時刻: {time_str}
+        
+        ## 主要指標
+        
+        ### 日経平均株価
+        - 現在値: {nikkei['Close'].iloc[-1]:,.2f}円
+        
+        ### ドル円
+        - 現在値: {usdjpy['Close'].iloc[-1]:.2f}円
+        
+        ### NASDAQ
+        - 現在値: {nasdaq['Close'].iloc[-1]:,.2f}
+        
+        ### S&P500
+        - 現在値: {sp500['Close'].iloc[-1]:,.2f}
+        
+        ---
+        
+        ※ 本レポートは情報提供を目的としており、投資助言ではありません。
+        """
+        
+        # 保存
+        os.makedirs('_posts', exist_ok=True)
+        filename = f"_posts/{date_str}-market-report.md"
+        with open(filename, 'w', encoding='utf-8') as f:
+            f.write(article)
+        print(f"記事を生成しました: {filename}")
+        EOF
+        
+    - name: 変更をコミット
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add _posts/*.md
+        git diff --quiet && git diff --staged --quiet || git commit -m "自動投稿: $(date +'%Y-%m-%d %H:%M')"
+        git push
