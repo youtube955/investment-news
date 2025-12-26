@@ -6,19 +6,19 @@ timezone: Asia/Tokyo
 baseurl: ""
 url: "https://youtube955.github.io"
 
-# Theme settings
+sass:
+  style: compressed
+
 theme: minima
 plugins:
   - jekyll-feed
   - jekyll-seo-tag
 
-# Collections
 collections:
   posts:
     output: true
     permalink: /:year/:month/:day/:title/
 
-# Defaults
 defaults:
   - scope:
       path: ""
@@ -27,6 +27,5 @@ defaults:
       layout: "post"
       author: "Market Analyst AI"
 
-# Custom settings
 show_excerpts: true
 excerpt_length: 150
