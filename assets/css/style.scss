@@ -1,0 +1,173 @@
+---
+---
+
+@import "minima";
+
+/* カスタムスタイル - 日経風デザイン */
+
+:root {
+  --primary-color: #006eb6;
+  --secondary-color: #e60012;
+  --text-color: #333;
+  --bg-color: #f5f5f5;
+  --card-bg: #ffffff;
+  --border-color: #ddd;
+}
+
+body {
+  font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+  color: var(--text-color);
+  background-color: var(--bg-color);
+  line-height: 1.8;
+}
+
+/* ヘッダー */
+.site-header {
+  background-color: var(--primary-color);
+  border-top: none;
+  border-bottom: 3px solid var(--secondary-color);
+}
+
+.site-title {
+  color: white !important;
+  font-weight: bold;
+  font-size: 1.5rem;
+}
+
+/* マーケットサマリーカード */
+.market-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin: 30px 0;
+}
+
+.market-card {
+  background: var(--card-bg);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
+}
+
+.market-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+.market-card h3 {
+  margin-top: 0;
+  color: var(--primary-color);
+  font-size: 1.1rem;
+  border-bottom: 2px solid var(--primary-color);
+  padding-bottom: 10px;
+}
+
+.market-value {
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--text-color);
+  margin: 15px 0;
+}
+
+.market-change {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.market-change.positive {
+  color: #d32f2f;
+}
+
+.market-change.negative {
+  color: #0288d1;
+}
+
+/* 記事カード */
+.post-list {
+  display: grid;
+  gap: 25px;
+  margin: 30px 0;
+}
+
+.post-item {
+  background: var(--card-bg);
+  border-radius: 8px;
+  padding: 25px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border-left: 4px solid var(--primary-color);
+}
+
+.post-title {
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+  color: var(--primary-color);
+}
+
+.post-meta {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 15px;
+}
+
+.post-excerpt {
+  line-height: 1.8;
+  color: var(--text-color);
+}
+
+/* セクション */
+.section-title {
+  font-size: 1.8rem;
+  color: var(--primary-color);
+  border-left: 5px solid var(--secondary-color);
+  padding-left: 15px;
+  margin: 40px 0 20px 0;
+}
+
+.analysis-section {
+  background: var(--card-bg);
+  border-radius: 8px;
+  padding: 25px;
+  margin: 20px 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* バッジ */
+.badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+.badge-bullish {
+  background-color: #ffebee;
+  color: #d32f2f;
+}
+
+.badge-bearish {
+  background-color: #e3f2fd;
+  color: #0288d1;
+}
+
+.badge-neutral {
+  background-color: #f5f5f5;
+  color: #666;
+}
+
+/* レスポンシブ */
+@media (max-width: 768px) {
+  .market-summary {
+    grid-template-columns: 1fr;
+  }
+  
+  .market-value {
+    font-size: 1.5rem;
+  }
+  
+  .post-title {
+    font-size: 1.2rem;
+  }
+}
