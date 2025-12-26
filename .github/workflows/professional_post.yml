@@ -26,7 +26,7 @@ jobs:
         
     - name: 本格的な市場分析記事を生成
       run: |
-        python << 'PYTHON_SCRIPT'
+        python << 'EOF'
         import yfinance as yf
         from datetime import datetime
         import os
@@ -208,7 +208,7 @@ excerpt: "{market_sentiment}相場。日経平均は{data['nikkei']['price']:,.2
             print(f"❌ エラー: {str(e)}")
             raise
 
-        PYTHON_SCRIPT
+        EOF
         
     - name: 変更をコミット・プッシュ
       run: |
