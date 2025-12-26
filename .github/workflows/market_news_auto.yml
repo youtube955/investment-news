@@ -1,0 +1,71 @@
+name: Auto Post Market News
+
+on:
+  schedule:
+    - cron: '0 0 * * 1-5'
+    - cron: '30 6 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  generate-post:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - name: チェックアウト
+      uses: actions/checkout@v3
+      
+    - name: Pythonセットアップ
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        
+    - name: 依存関係インストール
+      run: pip install yfinance pandas
+        
+    - name: 記事生成
+      run: |
+        python << 'EOF'
+        import yfinance as yf
+        from datetime import datetime
+        import os
+        
+        nikkei = yf.Ticker("^N225").history(period='1d')
+        usdjpy = yf.Ticker("JPY=X").history(period='1d')
+        nasdaq = yf.Ticker("^IXIC").history(period='1d')
+        sp500 = yf.Ticker("^GSPC").history(period='1d')
+        
+        now = datetime.now()
+        date_str = now.strftime('%Y-%m-%d')
+        time_str = now.strftime('%H:%M')
+        
+        article = f"""---
+        layout: post
+        title: "【市況レポート】{date_str} {time_str}"
+        date: {now.strftime('%Y-%m-%d %H:%M:%S')} +0900
+        categories: 市況
+        ---
+        
+        # 市場動向 {time_str}
+        
+        ## 主要指標
+        
+        - 日経平均: {nikkei['Close'].iloc[-1]:,.2f}円
+        - ドル円: {usdjpy['Close'].iloc[-1]:.2f}円
+        - NASDAQ: {nasdaq['Close'].iloc[-1]:,.2f}
+        - S&P500: {sp500['Close'].iloc[-1]:,.2f}
+        """
+        
+        os.makedirs('_posts', exist_ok=True)
+        with open(f"_posts/{date_str}-market.md", 'w', encoding='utf-8') as f:
+            f.write(article)
+        EOF
+        
+    - name: コミット
+      run: |
+        git config user.email "action@github.com"
+        git config user.name "GitHub Action"
+        git add _posts/*.md
+        git diff --quiet && git diff --staged --quiet || git commit -m "記事投稿 $(date +'%Y-%m-%d')"
+        git push
