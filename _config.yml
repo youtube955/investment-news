@@ -1,15 +1,17 @@
-title: "投資市況ニュース - プロフェッショナル市場分析"
-description: "AIによる本格的な市場分析と投資戦略。日経平均、米国株、為替の詳細解説"
+title: "投資市況ニュース"
+description: "毎日の市場分析と投資戦略"
 lang: ja
 timezone: Asia/Tokyo
 
-baseurl: ""
+baseurl: "/investment-news"
 url: "https://youtube955.github.io"
+
+# note風のシンプルなテーマ
+theme: minima
 
 sass:
   style: compressed
 
-theme: minima
 plugins:
   - jekyll-feed
   - jekyll-seo-tag
@@ -28,4 +30,4 @@ defaults:
       author: "Market Analyst AI"
 
 show_excerpts: true
-excerpt_length: 150
+excerpt_length: 200
